@@ -4,18 +4,30 @@
     Использует Arduino R3, DS18b20 (лучше водозащищенный), реле,
     HD44780-совместимый LCD экран и кнопку (для управления целевой температурой)
 */
+#define   RELAY1          6  //порт реле
+#define   ONE_WIRE_BUS    9  //на каком пине датчик температуры
+#define   BUTTON1         7  //пин кнопки
+/*  
+ *  Указываем, к каким пинам Arduino подключены выводы дисплея:
+ *   RS, E, DB4, DB5, DB6, DB7
+*/
+#define   LCD_RS          12
+#define   LCD_E           11
+#define   LCD_DB4          5
+#define   LCD_DB5          4
+#define   LCD_DB6          3
+#define   LCD_DB7          2
+
 #define   CODE_NAME     "Termos"
 #define   CODE_VERSION  2     //версия программы
-#define   RELAY1        6     //порт реле
 #define   serial_speed  9600  //скорость сериального выхода
-#define   CYCLE_SPEED   2000  //задержка цикла
+#define   CYCLE_SPEED   1000  //задержка цикла
 
 #include  <Logging.h>         //библиотека для удобной работы с сериальным выводом
 #define   LOGLEVEL LOG_LEVEL_DEBUG    //NOOUTPUT,ERRORS,INFOS,DEBUG,VERBOSE
 
 //DS18b20 temperature reading
 #include  <DallasTemperature.h>
-#define ONE_WIRE_BUS 9          // на каком пине датчик температуры
 #define TEMPERATURE_PRECISION 8 //точность измерения
 
 // Библиотека для работы с DS118b20 по OneWire
@@ -29,13 +41,9 @@ DeviceAddress mainSensor;     //адрес датчика температуры
 /* Создаём объект LCD-дисплея, используя конструктор класса LiquidCrystal
   с 6ю аргументами. Библиотека по количеству аргументов сама определит,
   что нужно использовать 4-битный интерфейс.
-  Указываем, к каким пинам Arduino подключены выводы дисплея:
-    RS, E, DB4, DB5, DB6, DB7
 */
-LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
+LiquidCrystal lcd(LCD_RS, LCD_E, LCD_DB4, LCD_DB5, LCD_DB6, LCD_DB7);
 
-//Кнопка
-#define BUTTON1              7  //пин кнопки
 
 //температурные константы
 #define TARGET_TEMP       26 //сколько хотим держать по-умолчанию
@@ -74,7 +82,7 @@ void setup() {
   lcd.print("STARTING");
   lcd.setCursor(0, 1);
   lcd.print(CODE_NAME);
-  lcd.print("v");
+  lcd.print(" v");
   lcd.print(CODE_VERSION);
 
   //инициализуем реле
@@ -91,7 +99,7 @@ void loop() {
   // put your main code here, to run repeatedly:
 
   bool buttonState = digitalRead(BUTTON1);
-  if (buttonState)  {
+  if (!buttonState)  {
     target_temp += TARGET_TEMP_STEP;
     target_temp = (target_temp > TARGET_TEMP_MAX)?TARGET_TEMP_MIN:target_temp;
   }
