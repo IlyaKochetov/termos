@@ -34,8 +34,15 @@ DeviceAddress mainSensor;     //адрес датчика температуры
 */
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
 
+//Кнопка
+#define BUTTON1              7  //пин кнопки
+
 //температурные константы
-#define TARGET_TEMP  25 //сколько хотим держать по-умолчанию
+#define TARGET_TEMP       26 //сколько хотим держать по-умолчанию
+#define TARGET_TEMP_MAX   66 //максимум для целевой температуры (актуально для пластиковых труб, чтобы не было больше 70)
+#define TARGET_TEMP_MIN   6 //сколько хотим держать по-умолчанию (сколько можно поставить по-миниумуму)
+#define TARGET_TEMP_STEP  2 //шаг изменения при нажатии кнопки
+
 #define TEMP_DELTA   2  //на сколько можем охладится прежде чем включать заново
 
 //статусы прибора
@@ -74,11 +81,20 @@ void setup() {
   pinMode(RELAY1, OUTPUT);
   relay1_state = STATE_OFF;
 
+  //инициализуем кнопку
+  pinMode(BUTTON1, INPUT_PULLUP);
+
   target_temp = TARGET_TEMP;
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
+
+  bool buttonState = digitalRead(BUTTON1);
+  if (buttonState)  {
+    target_temp += TARGET_TEMP_STEP;
+    target_temp = (target_temp > TARGET_TEMP_MAX)?TARGET_TEMP_MIN:target_temp;
+  }
   
   delay(CYCLE_SPEED);
   temp1_real = getTemp(mainSensor);
