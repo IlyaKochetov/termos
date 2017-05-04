@@ -2,24 +2,26 @@
     Снимаем температуру с DHT 18s20 и управляем реле
     Простейший темрорегулятор, предназначенный для управления температурой, например воды в бассейне, или масляного радиатора и т.д.
     Использует Arduino R3, DS18b20 (лучше водозащищенный), реле,
-    HD44780-совместимый LCD экран и кнопку (для управления целевой температурой)
+    LCD shield
 */
-#define   RELAY1          6  //порт реле
-#define   ONE_WIRE_BUS    9  //на каком пине датчик температуры
-#define   BUTTON1         7  //пин кнопки
-/*  
- *  Указываем, к каким пинам Arduino подключены выводы дисплея:
- *   RS, E, DB4, DB5, DB6, DB7
+#define   RELAY1          3  //порт реле
+#define   ONE_WIRE_BUS    11  //на каком пине датчик температуры
+#define   ONE_WIRE_PWR    12  //на каком пине датчик температуры
+#define   BUTTON1         4  //пин кнопки
+/*
+    Указываем, к каким пинам Arduino подключены выводы дисплея:
+     RS, E, DB4, DB5, DB6, DB7
 */
-#define   LCD_RS          12
-#define   LCD_E           11
-#define   LCD_DB4          5
-#define   LCD_DB5          4
-#define   LCD_DB6          3
-#define   LCD_DB7          2
+#define   LCD_RS          8 //(Data or Signal Display Selection)
+#define   LCD_E           9 //Enable
+#define   LCD_BACK        10  //LCD backlit
+#define   LCD_DB4          4
+#define   LCD_DB5          5
+#define   LCD_DB6          6
+#define   LCD_DB7          7
 
 #define   CODE_NAME     "Termos"
-#define   CODE_VERSION  2     //версия программы
+#define   CODE_VERSION  3     //версия программы
 #define   serial_speed  9600  //скорость сериального выхода
 #define   CYCLE_SPEED   1000  //задержка цикла
 
@@ -72,8 +74,6 @@ void setup() {
   Log.Info("Starting %s v%d"CR, CODE_NAME, CODE_VERSION);
 
   //инициализуем Ds18b20
-  digitalWrite( ONE_WIRE_BUS , LOW );
-  pinMode( ONE_WIRE_BUS  , OUTPUT );
   setupTempSensors();
 
   // Инициализуем дисплей, показываем надпись
@@ -86,11 +86,11 @@ void setup() {
   lcd.print(CODE_VERSION);
 
   //инициализуем реле
-  pinMode(RELAY1, OUTPUT);
+  //pinMode(RELAY1, OUTPUT);
   relay1_state = STATE_OFF;
 
   //инициализуем кнопку
-  pinMode(BUTTON1, INPUT_PULLUP);
+  //pinMode(BUTTON1, INPUT_PULLUP);
 
   target_temp = TARGET_TEMP;
 }
@@ -98,12 +98,12 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
 
-  bool buttonState = digitalRead(BUTTON1);
-  if (!buttonState)  {
+  bool buttonState = false;//digitalRead(BUTTON1);
+  if (buttonState)  {
     target_temp += TARGET_TEMP_STEP;
-    target_temp = (target_temp > TARGET_TEMP_MAX)?TARGET_TEMP_MIN:target_temp;
+    target_temp = (target_temp > TARGET_TEMP_MAX) ? TARGET_TEMP_MIN : target_temp;
   }
-  
+
   delay(CYCLE_SPEED);
   temp1_real = getTemp(mainSensor);
   temp1     = (int)temp1_real;
@@ -121,7 +121,7 @@ void loop() {
       Log.Info("Starting relay as temp (%d) reached %d - %d"CR, temp1, target_temp, TEMP_DELTA);
       relay1_state = relayStart(RELAY1);
     }
-    
+
     if (relay1_state == STATE_UP) {
       Log.Info("Waiting for as temp (%d) to reach %d"CR, temp1, target_temp);
     } else if (relay1_state == STATE_DOWN) {
@@ -145,8 +145,8 @@ void loop() {
 }
 
 /*
- * показ статусной строки
- */
+   показ статусной строки
+*/
 void showStatus(float target, int state) {
   lcd.setCursor(0, 1);
   lcd.print("TARG:"); //+3 = 3
@@ -165,8 +165,8 @@ void showStatus(float target, int state) {
 }
 
 /*
- * показ температуры
- */
+   показ температуры
+*/
 void showTemp(float temp) {
   lcd.setCursor(0, 0);  //верхняя строка
   //ds18b20 вернет -127 при обрыве или другой ошибке
@@ -180,9 +180,13 @@ void showTemp(float temp) {
 }
 
 /*
- * проверка датчиков и возврат адреса первого
- */
+   проверка датчиков и возврат адреса первого
+*/
 void  setupTempSensors()  {
+  pinMode(ONE_WIRE_PWR, OUTPUT); // set power pin for DS18B20 to output
+  digitalWrite(ONE_WIRE_PWR, HIGH); // turn sensor power on
+  delay(500);
+  // Start up the library
   sensors.begin();
   if (!sensors.getAddress(mainSensor, 0)) Log.Error("Unable to find address for the main sensor"CR);
 }
